@@ -196,13 +196,13 @@ export default function Landing() {
                 10 Disciplinas
               </Button>
               <Button onClick={() => generateRandomSubjects(25)} variant="secondary">
-                25 Disciplinas
-              </Button>
-              <Button onClick={() => generateRandomSubjects(50)} variant="secondary">
                 50 Disciplinas
               </Button>
-              <Button onClick={() => generateRandomSubjects(100)} variant="secondary">
+              <Button onClick={() => generateRandomSubjects(50)} variant="secondary">
                 100 Disciplinas
+              </Button>
+              <Button onClick={() => generateRandomSubjects(100)} variant="secondary">
+                300 Disciplinas
               </Button>
               <Button onClick={resetAll} variant="danger">
                 Resetar
