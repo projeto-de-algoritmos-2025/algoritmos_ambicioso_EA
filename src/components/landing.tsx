@@ -4,6 +4,78 @@
 import type React from "react";
 import { useState } from "react";
 
+const subjectNames = [
+  "Cálculo 1",
+  "APC",
+  "Cálculo 2",
+  "Física 1",
+  "Física exp",
+  "IAL",
+  "PA",
+  "PSPD",
+  "Banco de Dados 1",
+  "Banco de Dados 2",
+  "EDA1",
+  "EDA2",
+  "Redes",
+  "TED",
+  "PED",
+  "DIAC",
+  "MDS",
+  "Requisitos",
+  "Métodos númericos",
+  "Matemática Discreta 1",
+  "Matemática Discreta 2",
+  "EPS",
+  "TPPE",
+  "TEP",
+  "Qualidade",
+  "Testes",
+  "GPEQ",
+  "Embarcados",
+  "Paradigmas",
+  "Felicidade",
+  "Compiladores",
+  "Introd Eng",
+]
+
+const Button = ({
+  children,
+  onClick,
+  variant = "primary",
+  size = "md",
+  className = "",
+  ...props
+}: {
+  children: React.ReactNode
+  onClick?: () => void
+  variant?: "primary" | "secondary" | "ghost" | "danger"
+  size?: "sm" | "md"
+  className?: string
+  [key: string]: any
+}) => {
+  const baseClasses =
+    "inline-flex items-center justify-center rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2"
+
+  const variants = {
+    primary: "bg-blue-600 hover:bg-blue-700 text-white focus:ring-blue-500",
+    secondary: "bg-gray-200 hover:bg-gray-300 text-gray-900 focus:ring-gray-500",
+    ghost: "bg-transparent hover:bg-gray-100 text-gray-700 focus:ring-gray-500",
+    danger: "bg-red-600 hover:bg-red-700 text-white focus:ring-red-500",
+  }
+
+  const sizes = {
+    sm: "px-3 py-1.5 text-sm",
+    md: "px-4 py-2 text-sm",
+  }
+
+  return (
+    <button className={`${baseClasses} ${variants[variant]} ${sizes[size]} ${className}`} onClick={onClick} {...props}>
+      {children}
+    </button>
+  )
+}
+
 const Card = ({ children, className = "" }: { children: any; className?: string }) => (
   <div className={`bg-white rounded-xl shadow-lg border border-gray-200 ${className}`}>{children}</div>
 );
@@ -29,7 +101,32 @@ interface Subject {
 export default function Landing() {
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [newSubjectName, setNewSubjectName] = useState("");
-  const [newSubjectCode, setNewSubjectCode] = useState("");  
+  const [newSubjectCode, setNewSubjectCode] = useState("");
+
+  const generateRandomSubjects = (count: number) => {
+    const randomSubjects: Subject[] = []
+
+    for (let i = 0; i < count; i++) {
+      const days = [2, 3, 4, 5, 6].slice(0, Math.floor(Math.random() * 3) + 1)
+      const shifts = ["M", "T", "N"] as const
+      const shift = shifts[Math.floor(Math.random() * shifts.length)]
+      const maxSlots = { M: 5, T: 6, N: 4 }
+      const numSlots = Math.floor(Math.random() * 3) + 1
+      const startSlot = Math.floor(Math.random() * (maxSlots[shift] - numSlots + 1)) + 1
+      const timeSlots = Array.from({ length: numSlots }, (_, j) => startSlot + j)
+
+      randomSubjects.push({
+        id: Date.now() + i,
+        name: `${subjectNames[i % subjectNames.length]}`,
+        code: `${days.join("")}${shift}${timeSlots.join("")}`,
+        days,
+        shift,
+        timeSlots,
+      })
+    }
+
+    setSubjects(randomSubjects)
+  }
 
   const addSubject = () => {
     if (!newSubjectName.trim() || !newSubjectCode.trim()) {
@@ -44,7 +141,7 @@ export default function Landing() {
     const newSubject: Subject = {
       id: Date.now(),
       name: newSubjectName.trim(),
-      code: newSubjectCode.trim(), 
+      code: newSubjectCode.trim(),
       days: parsed.days,
       shift: parsed.shift,
       timeSlots: parsed.timeSlots,
@@ -77,13 +174,43 @@ export default function Landing() {
       return null
     }
   }
-  
-  function runAlgorithm(){
 
+  function runAlgorithm() {
+  }
+
+  const resetAll = () => {
+    setSubjects([]);
   }
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-100 p-4">
       <div className="max-w-7xl mx-auto space-y-8">
+        <Card className="border-purple-200">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-purple-800">
+              Teste de Performance
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-4">
+              <Button onClick={() => generateRandomSubjects(10)} variant="secondary">
+                10 Disciplinas
+              </Button>
+              <Button onClick={() => generateRandomSubjects(25)} variant="secondary">
+                25 Disciplinas
+              </Button>
+              <Button onClick={() => generateRandomSubjects(50)} variant="secondary">
+                50 Disciplinas
+              </Button>
+              <Button onClick={() => generateRandomSubjects(100)} variant="secondary">
+                100 Disciplinas
+              </Button>
+              <Button onClick={resetAll} variant="danger">
+                Resetar
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">Adicionar Disciplina</CardTitle>
@@ -97,6 +224,7 @@ export default function Landing() {
                 <input
                   id="subject-name"
                   placeholder="Ex: Cálculo 1"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                   value={newSubjectName}
                   onChange={(e) => setNewSubjectName(e.target.value)}
                 />
@@ -108,14 +236,15 @@ export default function Landing() {
                 <input
                   id="subject-code"
                   placeholder="Ex: 25T23"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                   value={newSubjectCode}
                   onChange={(e) => setNewSubjectCode(e.target.value.toUpperCase())}
                 />
               </div>
               <div className="flex items-end">
-                <button onClick={addSubject} className="w-full">
+                <Button onClick={addSubject} className="w-full">
                   Adicionar
-                </button>
+                </Button>
               </div>
             </div>
           </CardContent>
@@ -126,7 +255,7 @@ export default function Landing() {
               <CardTitle className="flex items-center gap-2">Disciplinas Cadastradas ({subjects.length})</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid gap-3">
+              <div className="grid gap-3 max-h-96 overflow-y-auto">
                 {subjects.map((subject: Subject, idx) => {
                   return (
                     <div
@@ -149,9 +278,12 @@ export default function Landing() {
         )}
         {subjects.length > 0 && (
           <div className="flex flex-wrap gap-4 justify-center">
-            <button onClick={runAlgorithm} className="gap-2 bg-green-600 hover:bg-green-700">
+            <Button onClick={resetAll} variant="secondary">
+              Resetar
+            </Button>
+            <Button onClick={runAlgorithm} className="gap-2 bg-green-600 hover:bg-green-700">
               Otimizar Grade
-            </button>
+            </Button>
           </div>
         )}
       </div>
