@@ -19,23 +19,35 @@ const CardTitle = ({ children, className = "" }: { children: any; className?: st
 const CardContent = ({ children }: { children: any }) => <div className="px-6 py-4">{children}</div>;
 
 interface Subject {
+  id: number;
   name: string;
   code: string;
+  days: number[]
+  shift: "M" | "T" | "N"
+  timeSlots: number[]
 }
 export default function Landing() {
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [newSubjectName, setNewSubjectName] = useState("");
-  const [newSubjectCode, setNewSubjectCode] = useState("");
+  const [newSubjectCode, setNewSubjectCode] = useState("");  
 
   const addSubject = () => {
     if (!newSubjectName.trim() || !newSubjectCode.trim()) {
-      console.log("Nome e código são obrigatórios");
+      alert("Nome e código são obrigatórios");
       return;
     }
-
+    const parsed = parseSigaaCode(newSubjectCode.trim())
+    if (!parsed) {
+      alert("Código inválido. Use o formato SIGAA (ex: 25T23, 246M34)")
+      return
+    }
     const newSubject: Subject = {
+      id: Date.now(),
       name: newSubjectName.trim(),
-      code: newSubjectCode.trim(),
+      code: newSubjectCode.trim(), 
+      days: parsed.days,
+      shift: parsed.shift,
+      timeSlots: parsed.timeSlots,
     };
 
     setSubjects((prev) => [...prev, newSubject]);
@@ -43,6 +55,32 @@ export default function Landing() {
     setNewSubjectCode("");
   };
 
+  const parseSigaaCode = (code: string): { days: number[]; shift: "M" | "T" | "N"; timeSlots: number[] } | null => {
+    try {
+      const regex = /^([2-6]+)([MTN])([1-6]+)$/
+      const match = code.match(regex)
+
+      if (!match) return null
+
+      const [, daysStr, shift, timeSlotsStr] = match
+
+      const days = daysStr.split("").map((d) => Number.parseInt(d))
+      const timeSlots = timeSlotsStr.split("").map((t) => Number.parseInt(t))
+
+      if (days.some((d) => d < 2 || d > 6)) return null
+
+      const maxSlots = { M: 5, T: 6, N: 4 }
+      if (timeSlots.some((t) => t < 1 || t > maxSlots[shift as keyof typeof maxSlots])) return null
+
+      return { days, shift: shift as "M" | "T" | "N", timeSlots }
+    } catch {
+      return null
+    }
+  }
+  
+  function runAlgorithm(){
+
+  }
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-100 p-4">
       <div className="max-w-7xl mx-auto space-y-8">
@@ -108,6 +146,13 @@ export default function Landing() {
               </div>
             </CardContent>
           </Card>
+        )}
+        {subjects.length > 0 && (
+          <div className="flex flex-wrap gap-4 justify-center">
+            <button onClick={runAlgorithm} className="gap-2 bg-green-600 hover:bg-green-700">
+              Otimizar Grade
+            </button>
+          </div>
         )}
       </div>
     </div>
