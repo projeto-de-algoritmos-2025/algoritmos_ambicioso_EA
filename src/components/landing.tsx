@@ -37,7 +37,7 @@ const subjectNames = [
   "Felicidade",
   "Compiladores",
   "Introd Eng",
-]
+];
 
 const Button = ({
   children,
@@ -47,34 +47,34 @@ const Button = ({
   className = "",
   ...props
 }: {
-  children: React.ReactNode
-  onClick?: () => void
-  variant?: "primary" | "secondary" | "ghost" | "danger"
-  size?: "sm" | "md"
-  className?: string
-  [key: string]: any
+  children: React.ReactNode;
+  onClick?: () => void;
+  variant?: "primary" | "secondary" | "ghost" | "danger";
+  size?: "sm" | "md";
+  className?: string;
+  [key: string]: any;
 }) => {
   const baseClasses =
-    "inline-flex items-center justify-center rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2"
+    "inline-flex items-center justify-center rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2";
 
   const variants = {
     primary: "bg-blue-600 hover:bg-blue-700 text-white focus:ring-blue-500",
     secondary: "bg-gray-200 hover:bg-gray-300 text-gray-900 focus:ring-gray-500",
     ghost: "bg-transparent hover:bg-gray-100 text-gray-700 focus:ring-gray-500",
     danger: "bg-red-600 hover:bg-red-700 text-white focus:ring-red-500",
-  }
+  };
 
   const sizes = {
     sm: "px-3 py-1.5 text-sm",
     md: "px-4 py-2 text-sm",
-  }
+  };
 
   return (
     <button className={`${baseClasses} ${variants[variant]} ${sizes[size]} ${className}`} onClick={onClick} {...props}>
       {children}
     </button>
-  )
-}
+  );
+};
 
 const Card = ({ children, className = "" }: { children: any; className?: string }) => (
   <div className={`bg-white rounded-xl shadow-lg border border-gray-200 ${className}`}>{children}</div>
@@ -90,30 +90,52 @@ const CardTitle = ({ children, className = "" }: { children: any; className?: st
 
 const CardContent = ({ children }: { children: any }) => <div className="px-6 py-4">{children}</div>;
 
+const Badge = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
+  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${className}`}>{children}</span>
+);
+
 interface Subject {
   id: number;
   name: string;
   code: string;
-  days: number[]
-  shift: "M" | "T" | "N"
-  timeSlots: number[]
+  days: number[];
+  shift: "M" | "T" | "N";
+  timeSlots: number[];
+  startTime: number;
+  endTime: number;
 }
 export default function Landing() {
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [newSubjectName, setNewSubjectName] = useState("");
   const [newSubjectCode, setNewSubjectCode] = useState("");
+  const [optimizedSelected, setOptimizedSelected] = useState<number[]>([]);
+
+  const convertToAbsoluteTime = (shift: "M" | "T" | "N", timeSlots: number[]) => {
+    const shiftOffset = { M: 0, T: 5 * 60, N: 11 * 60 }; 
+    const baseTime = shiftOffset[shift];
+
+    const minSlot = Math.min(...timeSlots);
+    const maxSlot = Math.max(...timeSlots);
+
+    const startTime = baseTime + (minSlot - 1) * 60 + 8 * 60; 
+    const endTime = baseTime + maxSlot * 60 + 8 * 60;
+
+    return { startTime, endTime };
+  };
 
   const generateRandomSubjects = (count: number) => {
-    const randomSubjects: Subject[] = []
+    const randomSubjects: Subject[] = [];
 
     for (let i = 0; i < count; i++) {
-      const days = [2, 3, 4, 5, 6].slice(0, Math.floor(Math.random() * 3) + 1)
-      const shifts = ["M", "T", "N"] as const
-      const shift = shifts[Math.floor(Math.random() * shifts.length)]
-      const maxSlots = { M: 5, T: 6, N: 4 }
-      const numSlots = Math.floor(Math.random() * 3) + 1
-      const startSlot = Math.floor(Math.random() * (maxSlots[shift] - numSlots + 1)) + 1
-      const timeSlots = Array.from({ length: numSlots }, (_, j) => startSlot + j)
+      const days = [2, 3, 4, 5, 6].slice(0, Math.floor(Math.random() * 3) + 1);
+      const shifts = ["M", "T", "N"] as const;
+      const shift = shifts[Math.floor(Math.random() * shifts.length)];
+      const maxSlots = { M: 5, T: 6, N: 4 };
+      const numSlots = Math.floor(Math.random() * 3) + 1;
+      const startSlot = Math.floor(Math.random() * (maxSlots[shift] - numSlots + 1)) + 1;
+      const timeSlots = Array.from({ length: numSlots }, (_, j) => startSlot + j);
+
+      const { startTime, endTime } = convertToAbsoluteTime(shift, timeSlots);
 
       randomSubjects.push({
         id: Date.now() + i,
@@ -122,22 +144,26 @@ export default function Landing() {
         days,
         shift,
         timeSlots,
-      })
+        startTime,
+        endTime,
+      });
     }
 
-    setSubjects(randomSubjects)
-  }
+    setSubjects(randomSubjects);
+  };
 
   const addSubject = () => {
     if (!newSubjectName.trim() || !newSubjectCode.trim()) {
       alert("Nome e código são obrigatórios");
       return;
     }
-    const parsed = parseSigaaCode(newSubjectCode.trim())
+    const parsed = parseSigaaCode(newSubjectCode.trim());
     if (!parsed) {
-      alert("Código inválido. Use o formato SIGAA (ex: 25T23, 246M34)")
-      return
+      alert("Código inválido. Use o formato SIGAA (ex: 25T23, 246M34)");
+      return;
     }
+    const { startTime, endTime } = convertToAbsoluteTime(parsed.shift, parsed.timeSlots);
+
     const newSubject: Subject = {
       id: Date.now(),
       name: newSubjectName.trim(),
@@ -145,6 +171,8 @@ export default function Landing() {
       days: parsed.days,
       shift: parsed.shift,
       timeSlots: parsed.timeSlots,
+      startTime,
+      endTime,
     };
 
     setSubjects((prev) => [...prev, newSubject]);
@@ -154,59 +182,77 @@ export default function Landing() {
 
   const parseSigaaCode = (code: string): { days: number[]; shift: "M" | "T" | "N"; timeSlots: number[] } | null => {
     try {
-      const regex = /^([2-6]+)([MTN])([1-6]+)$/
-      const match = code.match(regex)
+      const regex = /^([2-6]+)([MTN])([1-6]+)$/;
+      const match = code.match(regex);
 
-      if (!match) return null
+      if (!match) return null;
 
-      const [, daysStr, shift, timeSlotsStr] = match
+      const [, daysStr, shift, timeSlotsStr] = match;
 
-      const days = daysStr.split("").map((d) => Number.parseInt(d))
-      const timeSlots = timeSlotsStr.split("").map((t) => Number.parseInt(t))
+      const days = daysStr.split("").map((d) => Number.parseInt(d));
+      const timeSlots = timeSlotsStr.split("").map((t) => Number.parseInt(t));
 
-      if (days.some((d) => d < 2 || d > 6)) return null
+      if (days.some((d) => d < 2 || d > 6)) return null;
 
-      const maxSlots = { M: 5, T: 6, N: 4 }
-      if (timeSlots.some((t) => t < 1 || t > maxSlots[shift as keyof typeof maxSlots])) return null
+      const maxSlots = { M: 5, T: 6, N: 4 };
+      if (timeSlots.some((t) => t < 1 || t > maxSlots[shift as keyof typeof maxSlots])) return null;
 
-      return { days, shift: shift as "M" | "T" | "N", timeSlots }
+      return { days, shift: shift as "M" | "T" | "N", timeSlots };
     } catch {
-      return null
+      return null;
     }
-  }
+  };
 
-  function runAlgorithm() {
+  const executeIntervalScheduling = () => {
+    if (subjects.length === 0) return
+
+    const sortedSubjects = [...subjects].sort((a, b) => a.endTime - b.endTime)
+
+    const selected: number[] = []
+    let lastEndTime = 0
+
+    for (const subject of sortedSubjects) {
+      if (subject.startTime >= lastEndTime) {
+        selected.push(subject.id)
+        lastEndTime = subject.endTime
+      }
+    }
+
+    setOptimizedSelected(selected)
   }
 
   const resetAll = () => {
     setSubjects([]);
-  }
+    setOptimizedSelected([]);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-100 p-4">
       <div className="max-w-7xl mx-auto space-y-8">
         <Card className="border-purple-200">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-purple-800">
-              Teste de Performance
-            </CardTitle>
+            <CardTitle className="flex items-center gap-2 text-purple-800">Teste de Performance</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-4">
               <Button onClick={() => generateRandomSubjects(10)} variant="secondary">
                 10 Disciplinas
               </Button>
-              <Button onClick={() => generateRandomSubjects(25)} variant="secondary">
+              <Button onClick={() => generateRandomSubjects(50)} variant="secondary">
                 50 Disciplinas
               </Button>
-              <Button onClick={() => generateRandomSubjects(50)} variant="secondary">
+              <Button onClick={() => generateRandomSubjects(100)} variant="secondary">
                 100 Disciplinas
               </Button>
-              <Button onClick={() => generateRandomSubjects(100)} variant="secondary">
+              <Button onClick={() => generateRandomSubjects(300)} variant="secondary">
                 300 Disciplinas
               </Button>
               <Button onClick={resetAll} variant="danger">
                 Resetar
               </Button>
+              <Button onClick={executeIntervalScheduling} className="gap-2 bg-green-600 hover:bg-green-700">
+              Otimizar Grade
+            </Button>
             </div>
           </CardContent>
         </Card>
@@ -257,6 +303,7 @@ export default function Landing() {
             <CardContent>
               <div className="grid gap-3 max-h-96 overflow-y-auto">
                 {subjects.map((subject: Subject, idx) => {
+                  const isOptimizedSelected = optimizedSelected.includes(subject.id);
                   return (
                     <div
                       key={idx}
@@ -265,6 +312,9 @@ export default function Landing() {
                     >
                       <div className="flex items-center gap-4">
                         <div>
+                          {isOptimizedSelected && (
+                            <Badge className="bg-green-100 text-green-800 text-xs">Selecionada</Badge>
+                          )}
                           <h3 className="font-semibold">{subject.name}</h3>
                           <p className="text-xs text-gray-500">Código: {subject.code}</p>
                         </div>
@@ -276,16 +326,26 @@ export default function Landing() {
             </CardContent>
           </Card>
         )}
-        {subjects.length > 0 && (
-          <div className="flex flex-wrap gap-4 justify-center">
-            <Button onClick={resetAll} variant="secondary">
-              Resetar
-            </Button>
-            <Button onClick={runAlgorithm} className="gap-2 bg-green-600 hover:bg-green-700">
-              Otimizar Grade
-            </Button>
-          </div>
+        {optimizedSelected.length > 0 && (
+            <Card className="border-green-200 bg-green-50">
+            <CardHeader>
+                <CardTitle className="text-green-800 flex items-center gap-2">
+                Resultado do Interval Scheduling
+                </CardTitle>
+            </CardHeader>
+            <CardContent>
+                <div className="text-center p-6">
+                <div className="text-6xl font-bold text-green-600 mb-2">{optimizedSelected.length}</div>
+                <p className="text-lg text-green-800 mb-4">disciplinas selecionadas de {subjects.length} disponíveis</p>
+                <p className="text-sm text-green-700">
+                    O algoritmo de Interval Scheduling encontrou a solução ótima, maximizando o número de disciplinas sem
+                    conflitos de horário.
+                </p>
+                </div>
+            </CardContent>
+            </Card>
         )}
+
       </div>
     </div>
   );
